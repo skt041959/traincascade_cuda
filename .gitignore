@@ -1,0 +1,8 @@
+*.swp
+*.o
+
+.directory
+.ycm_extra_conf.py
+.ycm_extra_conf.pyc
+haar
+source/
