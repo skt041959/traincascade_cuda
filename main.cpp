@@ -12,9 +12,18 @@
 using namespace cv;
 using namespace std;
 
-int calcuHaarFeature_buffer(u32 *ptr, vector<SFeature> & features, int width, int height)
+int calcuHaarFeature_buffer(u32 *ptr, vector<SFeature> &features, int width, int height)
 {
+    //SFeature f[5];
+    //SFeature *pf = f;
+    
+    //int s = calcuHaarFeature_tiled(ptr, f, width, height);
+    vector<SFeature> &features;
     int s = calcuHaarFeature(ptr, features, width, height);
+    //for(int i=0; i<5; ++i)
+    //{
+    //    cout<<f[i].featureNum<<endl;
+    //}
     return s;
 }
 
@@ -40,14 +49,6 @@ int main(int argc, char *argv[])
     u32 * ptr_inte = (u32 *)inte.data;
     u8 * ptr_sample = (u8 *)sample.data;
     cout<<inte.rows<<" "<<inte.cols<<endl;
-    //for(int i=0; i<inte.rows; ++i)
-    //{
-    //    for(int j=0; j<inte.cols; ++j)
-    //    {
-    //        cout<<*(ptr_inte+i*inte.cols+j)<<"\t";
-    //    }
-    //    cout<<endl;
-    //}
     for(int i=0; i<sample.rows; ++i)
     {
         for(int j=0; j<sample.cols; ++j)
@@ -61,13 +62,8 @@ int main(int argc, char *argv[])
     vector<SFeature>features;
     int status = calcuHaarFeature_buffer(ptr_inte, features, width, height);
     cout<<features.size()<<endl;
-    //for(size_t i=0; i<features.size(); ++i)
-    //{
-    //    for(int j=0; j<features[i].featureNum; ++j)
-    //        cout<<*(features[i].pfeature+j)<<" ";
-    //    cout<<endl;
-    //}
-    //cout<<endl;
+    int total=0;
+    cout<<"total "<<total<<endl;
 
     return 0;
 }
