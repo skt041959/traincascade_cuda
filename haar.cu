@@ -7,6 +7,12 @@
 #include "haar_kernels.cu"
 
 using namespace std;
+unsigned int *d_ptr;
+int *d_pfeature;
+int * pfeatures[5];
+int memSize;
+int featureSize_max;
+int compactSize[5];
 
 __host__ int calcuHaarFeature(u32 *ptr, vector<SFeature> &features, int width, int height)
 {
@@ -86,56 +92,55 @@ __host__ int calcuHaarFeature(u32 *ptr, vector<SFeature> &features, int width, i
     return 0;
 }
 
-__host__ int prepare(s32 **p_raw_features, int **compressSize, unsigned int **d_ptr, int **d_pfeature, int width, int height)
+__host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int height)
 {
     int s1 = (width)*(height/2)*width*height*sizeof(int);
     int s2 = (width/2)*(height)*width*height*sizeof(int);
     int featureSize_max = s1 > s2 ? s1 : s2;
 
-    int * m = (int *)malloc(5*featureSize_max*sizeof(int));
-    *p_raw_features = m;
+    *p_raw_features = (int *)malloc(5*featureSize_max*sizeof(int));
 
-    int temp_x[5] = {2, 1, 3, 1, 2};
-    int temp_y[5] = {1, 2, 1, 3, 2};
-    int total[5] = {0};
-    for(int type=0; type<5; ++type)
-    {
-        int sx_max = width/temp_x[type];
-        int sy_max = height/temp_y[type];
-
-        for(int sx=1; sx<=sx_max; ++sx)
-        {
-            for(int sy=1; sy<=sy_max; ++sy)
-            {
-                int blockDim_x = width-temp_x[type]*sx+1;
-                int blockDim_y = height-temp_y[type]*sy+1;
-                total[type] += blockDim_x*blockDim_y;
-            }
-        }
-    }
-    *compressSize = total;
-
-    int memSize = (width+1)*(height+1)*sizeof(unsigned int);
-    cudaMalloc((void **)d_ptr, memSize);
-
-    cudaMalloc((void **)d_pfeature, featureSize_max);
-
-}
-
-__host__ int calcuHaarFeature3(u32 *ptr, s32 *p_raw_features, int width, int height, )
-{
-    int s1 = (width)*(height/2)*width*height*sizeof(int);
-    int s2 = (width/2)*(height)*width*height*sizeof(int);
-    int featureSize_max = s1 > s2 ? s1 : s2;
-
-    int * pfeatures[5];
     pfeatures[0] = p_raw_features;
     pfeatures[1] = p_raw_features+featureSize_max;
     pfeatures[2] = p_raw_features+2*featureSize_max;
     pfeatures[3] = p_raw_features+3*featureSize_max;
     pfeatures[4] = p_raw_features+4*featureSize_max;
 
+    int temp_x[5] = {2, 1, 3, 1, 2};
+    int temp_y[5] = {1, 2, 1, 3, 2};
+
+    int total = 0;
+    for(int type=0; type<5; ++type)
+    {
+        int sx_max = width/temp_x[type];
+        int sy_max = height/temp_y[type];
+        int index = 0;
+        for(int sy=1; sy<=sy_max; ++sy)
+            for(int sx=1; sx<=sx_max; ++sx)
+            {
+                int blockDim_x = width-temp_x[type]*sx+1;
+                int blockDim_y = height-temp_y[type]*sy+1;
+                for(int i=0; i<blockDim_y; ++i)
+                    for(int j=0; j<blockDim_x; ++j)
+                    {
+                        index++;
+                        *(pfeatures[type]+(sy*sx_max+sx)*blockDim_x*blockDim_y+blockDim_x*i+j) = index;
+                    }
+                total += blockDim_x*blockDim_y;
+            }
+        compactSize[type] = total;
+    }
+
+    *p_compactSize = compactSize[0]+compactSize[1]+compactSize[2]+compactSize[3]+compactSize[4];
+
     int memSize = (width+1)*(height+1)*sizeof(unsigned int);
+    cudaMalloc((void **)&d_ptr, memSize);
+
+    cudaMalloc((void **)&d_pfeature, featureSize_max);
+}
+
+__host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
+{
     cudaMemcpy(d_ptr, ptr, memSize, cudaMemcpyHostToDevice);
 
     int temp_x[5] = {2, 1, 3, 1, 2};
@@ -171,16 +176,10 @@ __host__ int calcuHaarFeature3(u32 *ptr, s32 *p_raw_features, int width, int hei
         cudaThreadSynchronize();
 
         checkCUDAError("kernel execution");
-        int featureSize = blockDim_x*blockDim_y*sizeof(int);
         cudaMemcpy(pfeatures[type], d_pfeature, featureSize, cudaMemcpyDeviceToHost);
     }
 
-    cout<<endl;
-    cudaFree(d_ptr);
-    cudaFree(d_pfeature);
-
     return 0;
-
 }
 
 //obsolete
@@ -301,7 +300,7 @@ __host__ int calcuHaarFeature2(u32 *ptr, SFeature *features, int width, int heig
     return 0;
 }
 
-void checkCUDAError(const char *msg)
+__host__ void checkCUDAError(const char *msg)
 {
     cudaError_t err = cudaGetLastError();
     if( cudaSuccess != err)
