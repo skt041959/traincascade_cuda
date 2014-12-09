@@ -12,25 +12,38 @@
 using namespace cv;
 using namespace std;
 
-vector<int> calcuHaarFeature_buffer(Mat sample, int compactSize)
+vector<int> calcuHaarFeature_sample(Mat sample, int *raw_feature, int compactSize) //提取单个样本特征的函数
 {
     //=========================calculate the integral image================
     Mat inte;
     cv::integral(sample, inte);
-    Mat inte2(inte, Rect(1, 1, 20, 20));
-    Mat inte3 = inte2.clone();
-
-    //如果输入的是待检测图，在这里分割成小块，尺寸和样本一样
-    //待添加
 
     u32 * ptr_inte = (u32 *)inte.data;
-    //cout<<inte.rows<<" "<<inte.cols<<endl;
-    int *p_featureValue;
-    //======================the entry of the feature calculating==============
-    //这个函数用来计算样本特征和待检测图特征，需要对所有样本和带检测图应用此函数
-    int status = calcuHaarFeature3(ptr_inte, &p_featureValue, sample.cols, sample.rows);
-    vector<int> features(p_featureValue, p_featureValue+compactSize); //构建vector来跟权哥的程序对接
+    int status = calcuHaarFeature3(ptr_inte, sample.cols, sample.rows);
+    vector<int> features(raw_feature, raw_feature+compactSize);
     return features;
+}
+
+vector<vector<int> > calcuHaarFeature_image(Mat image, int *raw_feature, int compactSize, int sample_cols, int sample_rows, int offset_x, int offset_y) //提取待检测图像特征的函数
+{
+    Mat inte;
+    cv::integral(image, inte);
+
+    vector<vector<int> > tile_feature;
+
+    for(int i=0; i+sample_rows<image.rows; i+=offset_y)
+        for(int j=0; j+sample_cols<image.cols; j+=offset_x)
+        {
+            Mat roi(image, Rect(j, i, sample_cols, sample_rows));
+            Mat tile = roi.clone();
+
+            u32 * ptr_inte = (u32 *)inte.data;
+            int status = calcuHaarFeature3(ptr_inte, sample_cols, sample_rows);
+            vector<int> features(raw_feature, raw_feature+compactSize);
+            tile_feature.push_back(features);
+        }
+
+    return tile_feature;
 }
 
 int main(int argc, char *argv[])
@@ -61,7 +74,7 @@ int main(int argc, char *argv[])
     int compactSize;
     prepare(&raw_feature, &compactSize, width, height);
 
-    vector<int> features = calcuHaarFeature_buffer(sample, compactSize);
+    vector<int> features = calcuHaarFeature_sample(sample, raw_feature, compactSize);
 
     post_calculate(); //free memory
 
