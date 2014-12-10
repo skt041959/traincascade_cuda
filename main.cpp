@@ -46,6 +46,7 @@ vector<vector<int> > calcuHaarFeature_image(Mat image, int *raw_feature, int com
     return tile_feature;
 }
 
+//计算样本特征时如下调用
 int main(int argc, char *argv[])
 {
     //==========================prepare sample image========================
@@ -72,9 +73,42 @@ int main(int argc, char *argv[])
 
     int *raw_feature;
     int compactSize;
-    prepare(&raw_feature, &compactSize, width, height);
+    prepare(&raw_feature, &compactSize, width, height); //分配内存，返回的是特征的存贮空间指针，以及特征的长度
+                                                        //raw_feature 特征的存储空间的指针
+                                                        //compactSize 特征的长度
+                                                        //width, height 样本宽、高
+                                                        
+    cout<<"prepare complete"<<endl;
 
     vector<int> features = calcuHaarFeature_sample(sample, raw_feature, compactSize);
+    //vector<int> features2 = calcuHaarFeature_sample(sample2, raw_feature, compactSize); //第二个样本同理
+
+    //vector<vector<int> > all_sample_feature //将上面计算的features 全部存到这个容器中以便权哥的训练函数进行处理
+    post_calculate(); //free memory
+
+    return 0;
+}
+
+//如果是要计算带检测图像的特征如下调用
+int main2(int argc, char *argv[])
+{
+    Mat image_grayscale = imread("image.jpg"); //待检测图像处理成灰度图
+
+    int *raw_feature;
+    int compactSize;
+    int sample_cols = 21; // 我给出来的所有的样本都是这个尺寸，这也是检测器的尺寸
+    int sample_rows = 28;
+    prepare(&raw_feature, &compactSize, sample_cols, sample_rows); //分配内存，返回的是特征的存贮空间指针，以及特征的长度
+                                                        //raw_feature 特征的存储空间的指针
+                                                        //compactSize 特征的长度
+                                                        //width, height 样本宽、高
+
+    int offset_x = 6;
+    int offset_y = 8; //检测器每次位移的像素个数
+
+    vector<vector<int> > all_tile_features = calcuHaarFeature_image(image_grayscale, raw_feature, compactSize, sample_cols, sample_rows, offset_x, offset_y);
+    //返回的是检测遍历图像得到的所有特征，把这些特征一次通过权哥代码训练出的检测器
+    //需要将不同缩放大小的图像依次传给该函数，因为检测器只能检测特定大小的人脸
 
     post_calculate(); //free memory
 

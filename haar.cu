@@ -96,7 +96,7 @@ __host__ int calcuHaarFeature(u32 *ptr, vector<SFeature> &features, int width, i
         }
     }
 
-    cout<<endl;
+    //cout<<endl;
     cudaFree(d_ptr);
     cudaFree(d_pfeature);
 
@@ -108,6 +108,7 @@ __host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int he
     *p_compactSize = 0;
     featureSize_max = 0;
     offset_matrix_size_max = 0;
+
     for(int type=0; type<5; ++type)
     {
         int sx_max = width/temp_x[type];
@@ -119,34 +120,46 @@ __host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int he
             offset_matrix_size_max = offset_matrix_size[type];
 
         p_offset_matrix[type] = (int*)malloc(offset_matrix_size[type]*sizeof(int));
+        cout<<"malloc matrix "<<type<<endl;
 
-        int *p_offset;
+        int *p_offset = p_offset_matrix[type];
         int index = 0;
         for(int sy=1; sy<=sy_max; ++sy)
             for(int sx=1; sx<=sx_max; ++sx)
             {
-                int blockDim_x = width-temp_x[type]*sx+1;
-                int blockDim_y = height-temp_y[type]*sy+1;
-                for(int i=0; i<blockDim_y; ++i)
-                    for(int j=0; j<blockDim_x; ++j)
+                //int blockDim_x = width-temp_x[type]*sx+1;
+                //int blockDim_y = height-temp_y[type]*sy+1;
+                for(int i=0; i<height; ++i)
+                    for(int j=0; j<width; ++j)
                     {
-                        *(p_offset+(sy*sx_max+sx)*blockDim_x*blockDim_y+blockDim_x*i+j) = index;
-                        index++;
+                        if((i+temp_y[type]*sy) <= height && (j+temp_x[type]*sx) <= width)
+                        {
+                            *(p_offset+((sy-1)*(sx_max-1)+(sx-1))*width*height+width*i+j) = index;
+                            //if(type==0 && sy==2 && sx==1)
+                            //{
+                            //    cout<<i<<","<<j<<" ";
+                            //    cout<<((sy-1)*(sx_max-1)+(sx-1))*width*height+width*i+j<<endl;
+                            //}
+                            index++;
+                        }
                     }
             }
+
+        cout<<"------"<<index<<endl;
 
         compactSize[type] = index;
         *p_compactSize += compactSize[type];
 
         if(index>featureSize_max)
             featureSize_max = index;
-
     }
 
-    *p_raw_features = (int*)malloc(*p_compactSize*sizeof(int));
-    p_features_start = *p_raw_features;
+    cout<<"malloc feature"<<endl;
+    p_features_start =  (int*)malloc(*p_compactSize*sizeof(int));
+    *p_raw_features = p_features_start;
 
-    int *t = *p_raw_features;
+    int *t = p_features_start;
+    p_features[0] = t;
     for(int type=1; type<5; ++type)
     {
         t += compactSize[type-1];
@@ -158,6 +171,9 @@ __host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int he
     cudaMalloc((void **)&d_ptr, memSize);
     cudaMalloc((void **)&d_pfeature, featureSize_max*sizeof(int));
     cudaMalloc((void **)&d_offset_matrix, offset_matrix_size_max*sizeof(int));
+    cout<<"memSize"<<memSize<<endl;
+    cout<<"featureMax"<<featureSize_max<<endl;
+    cout<<"offsetMax"<<offset_matrix_size_max<<endl;
 
     return 0;
 }
@@ -171,7 +187,7 @@ __host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
         int sx_max = width/temp_x[type];
         int sy_max = height/temp_y[type];
 
-        dim3 dimGrid(sy_max, sx_max);
+        dim3 dimGrid(sx_max-1, sy_max-1);
         dim3 dimBlock(width, height);
 
         cudaMemcpy(d_offset_matrix, p_offset_matrix[type], offset_matrix_size[type]*sizeof(int), cudaMemcpyHostToDevice);
@@ -198,7 +214,12 @@ __host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
         cudaThreadSynchronize();
 
         checkCUDAError("kernel execution");
-        cudaMemcpy(p_features[type], d_pfeature, compactSize[type], cudaMemcpyDeviceToHost);
+        cout<<"type "<<type<<endl;
+        cudaMemcpy(p_features[type], d_pfeature, compactSize[type]*sizeof(int), cudaMemcpyDeviceToHost);
+        //cout<<"======"<<endl;
+        //for(int i=0; i<20; ++i)
+        //    for(int j=0; j<20; ++j)
+        //        cout<<i<<","<<j<<" "<<*(p_features[type]+i*20+j)<<endl;
     }
 
     return 0;
@@ -331,7 +352,7 @@ __host__ int calcuHaarFeature2(u32 *ptr, SFeature *features, int width, int heig
         printf("%d\n", total[type]);
     }
 
-    cout<<endl;
+    //cout<<endl;
     cudaFree(d_ptr);
     cudaFree(d_pfeature);
 
