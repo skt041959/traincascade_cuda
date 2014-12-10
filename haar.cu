@@ -10,14 +10,14 @@ using namespace std;
 unsigned int *d_ptr; //image in the device
 int memSize; //the image size in the device
 
-int *d_pfeature; //feature in the device
+float *d_pfeature; //feature in the device
 int featureSize_max; //the compact feature size in the device
 
 int *d_offset_matrix; //the offset matrix of the feature store
 int offset_matrix_size_max;
 
-int *p_features_start;
-int *p_features[5]; //the individual feature of the 5type
+float *p_features_start;
+float *p_features[5]; //the individual feature of the 5type
 int compactSize[5]; //the individual compact feature size of 5 type
 
 int *p_offset_matrix[5]; //the individual offset of the 5type
@@ -103,7 +103,7 @@ __host__ int calcuHaarFeature(u32 *ptr, vector<SFeature> &features, int width, i
     return 0;
 }
 
-__host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int height)
+__host__ int prepare(float **p_raw_features, int *p_compactSize, int width, int height)
 {
     *p_compactSize = 0;
     featureSize_max = 0;
@@ -155,10 +155,10 @@ __host__ int prepare(s32 **p_raw_features, int *p_compactSize, int width, int he
     }
 
     cout<<"malloc feature"<<endl;
-    p_features_start =  (int*)malloc(*p_compactSize*sizeof(int));
+    p_features_start =  (float*)malloc(*p_compactSize*sizeof(float));
     *p_raw_features = p_features_start;
 
-    int *t = p_features_start;
+    float *t = p_features_start;
     p_features[0] = t;
     for(int type=1; type<5; ++type)
     {
@@ -215,7 +215,7 @@ __host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
 
         checkCUDAError("kernel execution");
         cout<<"type "<<type<<endl;
-        cudaMemcpy(p_features[type], d_pfeature, compactSize[type]*sizeof(int), cudaMemcpyDeviceToHost);
+        cudaMemcpy(p_features[type], d_pfeature, compactSize[type]*sizeof(float), cudaMemcpyDeviceToHost);
         //cout<<"======"<<endl;
         //for(int i=0; i<20; ++i)
         //    for(int j=0; j<20; ++j)

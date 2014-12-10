@@ -31,7 +31,7 @@ void checkCUDAError(const char *msg);
 //int calcuHaarFeature(u32 *ptr, vector<SFeature> &features, int width, int height);
 int calcuHaarFeature3(u32 *ptr, int width, int height);
 
-int prepare(s32 **p_raw_features, int *p_compactSize, int width, int height);
+int prepare(float **p_raw_features, int *p_compactSize, int width, int height);
 int post_calculate();
 
 #endif

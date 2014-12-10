@@ -207,7 +207,7 @@ __global__ void haar_rect2(u32 *ptr, s32 *pfeature, int width, int height)
     *(pfeature+threadIdx.x) = f1 - 2*f2 -2*f3;
 }
 
-__global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, int *pfeature, int width, int height)
+__global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, float *pfeature, int width, int height)
 {
     int i = threadIdx.y; //0
     int j = threadIdx.x; //13
@@ -230,7 +230,7 @@ __global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, int *pfeat
     }
 }
 
-__global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, int *pfeature, int width, int height)
+__global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, float *pfeature, int width, int height)
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
@@ -250,7 +250,7 @@ __global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, int *pfeatur
     }
 }
 
-__global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, int *pfeature, int width, int height)
+__global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, float *pfeature, int width, int height)
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
@@ -270,7 +270,7 @@ __global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, int *pfea
     }
 }
 
-__global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, int *pfeature, int width, int height)
+__global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, float *pfeature, int width, int height)
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
@@ -290,7 +290,7 @@ __global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, int *pfeatu
     }
 }
 
-__global__ void haar_rect3(u32 *ptr, int *d_offset_matrix, int *pfeature, int width, int height)
+__global__ void haar_rect3(u32 *ptr, int *d_offset_matrix, float *pfeature, int width, int height)
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
