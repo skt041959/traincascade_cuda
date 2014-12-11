@@ -214,7 +214,7 @@ __host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
         cudaThreadSynchronize();
 
         checkCUDAError("kernel execution");
-        cout<<"type "<<type<<endl;
+        //cout<<"type "<<type<<endl;
         cudaMemcpy(p_features[type], d_pfeature, compactSize[type]*sizeof(float), cudaMemcpyDeviceToHost);
         //cout<<"======"<<endl;
         //for(int i=0; i<20; ++i)

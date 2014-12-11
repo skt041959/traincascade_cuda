@@ -14,11 +14,12 @@
 using namespace cv;
 using namespace std;
 
-#define SAMPLE_COLS 21
-#define SAMPLE_ROWS 24
+#define SAMPLE_COLS 19
+#define SAMPLE_ROWS 19
 #define DIMENSION 
 
-vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
+//vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
+int calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
 {
     Mat equalized;
     cv::equalizeHist(sample, equalized);
@@ -27,8 +28,9 @@ vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compac
 
     u32 * ptr_inte = (u32 *)inte.data;
     int status = calcuHaarFeature3(ptr_inte, sample.cols, sample.rows);
-    vector<float> features(raw_feature, raw_feature+compactSize);
-    return features;
+    //vector<float> features(raw_feature, raw_feature+compactSize);
+    //return features;
+    return status;
 }
 
 vector<vector<int> > calcuHaarFeature_image(Mat image, int *raw_feature, int compactSize, int sample_cols, int sample_rows, int offset_x, int offset_y) //提取待检测图像特征的函数
@@ -80,35 +82,144 @@ vector<Mat> read_image_list(const char * filename)
     return image_list;
 }
 
-int prepare_sample(vector<vector<float> > &sample, vector<int> &flag)
+//int prepare_sample(vector<vector<float> > &sample, vector<int> &flag)
+int prepare_sample(float **sample, int **flag)
 {
     vector<Mat> pos_sample = read_image_list("./positive.txt");
     vector<Mat> nag_sample = read_image_list("./nagetive.txt");
-    vector<int> pos_flag(pos_sample.size(), 1);
-    vector<int> nag_flag(nag_sample.size(), 0);
-    flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
-    flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
+
+    //vector<int> pos_flag(pos_sample.size(), 1);
+    //vector<int> nag_flag(nag_sample.size(), 0);
+    //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
+    //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
+    
+    int num = pos_sample.size()+nag_sample.size();
+    
+    int *f = (int*)malloc(num*sizeof(int));
+    int *i=f;
+    for(size_t n=0; n<pos_sample.size(); ++n)
+    {
+        *i=1;
+        i++;
+    }
+    for(size_t n=0; n<nag_sample.size(); ++n)
+    {
+        *i=0;
+        i++;
+    }
+    *flag = f;
 
     float *raw_feature;
     int compactSize;
     prepare(&raw_feature, &compactSize, SAMPLE_COLS, SAMPLE_ROWS);
 
+    float *s = (float*)malloc(num*compactSize*sizeof(float));
+    *sample = s;
+
+    cout<<"pos feature"<<endl;
+    int t=0;
     for(vector<Mat>::iterator i=pos_sample.begin(); i!=pos_sample.end(); ++i)
     {
-        vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
-        sample.push_back(features);
+        //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        //sample.push_back(features);
+        memcpy(s, raw_feature, compactSize*sizeof(float));
+        s+=compactSize;
+        t++;
+        if(t%10==0)
+            cout<<"\rpos "<<t<<flush;
     }
+    cout<<" "<<pos_sample.size()<<endl;
 
+    cout<<"nag feature"<<endl;
+    t=0;
     for(vector<Mat>::iterator i=nag_sample.begin(); i!=nag_sample.end(); ++i)
     {
-        vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
-        sample.push_back(features);
+        //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        //sample.push_back(features);
+        memcpy(s, raw_feature, compactSize*sizeof(float));
+        s+=compactSize;
+        t++;
+        if(t%10==0)
+            cout<<"\rpos "<<t<<flush;
     }
+    cout<<" "<<nag_sample.size()<<endl;
     
     post_calculate();
-    return 0;
+    cout<<"feature complete"<<endl;
+
+    return num;
 }
 
+int prepare_test(float **sample, int **flag)
+{
+    vector<Mat> pos_sample = read_image_list("./test_positive.txt");
+    vector<Mat> nag_sample = read_image_list("./test_nagetive.txt");
+
+    //vector<int> pos_flag(pos_sample.size(), 1);
+    //vector<int> nag_flag(nag_sample.size(), 0);
+    //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
+    //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
+    
+    int num = pos_sample.size()+nag_sample.size();
+    
+    int *f = (int*)malloc(num*sizeof(int));
+    int *i=f;
+    for(size_t n=0; n<pos_sample.size(); ++n)
+    {
+        *i=1;
+        i++;
+    }
+    for(size_t n=0; n<nag_sample.size(); ++n)
+    {
+        *i=0;
+        i++;
+    }
+    *flag = f;
+
+    float *raw_feature;
+    int compactSize;
+    prepare(&raw_feature, &compactSize, SAMPLE_COLS, SAMPLE_ROWS);
+
+    float *s = (float*)malloc(num*compactSize*sizeof(float));
+    *sample = s;
+
+    cout<<"pos feature"<<endl;
+    int t=0;
+    for(vector<Mat>::iterator i=pos_sample.begin(); i!=pos_sample.end(); ++i)
+    {
+        //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        //sample.push_back(features);
+        memcpy(s, raw_feature, compactSize*sizeof(float));
+        s+=compactSize;
+        t++;
+        if(t%10==0)
+            cout<<"\rpos "<<t<<flush;
+    }
+    cout<<" "<<pos_sample.size()<<endl;
+
+    cout<<"nag feature"<<endl;
+    t=0;
+    for(vector<Mat>::iterator i=nag_sample.begin(); i!=nag_sample.end(); ++i)
+    {
+        //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        //sample.push_back(features);
+        memcpy(s, raw_feature, compactSize*sizeof(float));
+        s+=compactSize;
+        t++;
+        if(t%10==0)
+            cout<<"\rpos "<<t<<flush;
+    }
+    cout<<" "<<nag_sample.size()<<endl;
+    
+    post_calculate();
+    cout<<"feature complete"<<endl;
+
+    return num;
+}
 /*
 int main()
 {
@@ -120,7 +231,6 @@ int main()
 
     return 0;
 }
-*/
 
 /*
 int main_deprecated(int argc, char *argv[])

@@ -3,13 +3,10 @@
 #include <time.h>
 #include <unistd.h>
 #include <math.h>
-#include<vector>
-#include"adaboost.h"
+#include <vector>
+#include "adaboost.hpp"
 using namespace std;
 
-#define get_timer(val) __asm__ __volatile__ ("rdtsc":"=A"(val))
-#define TICK_PER_SECOND 1960ULL//cpu频率，单位us
-extern int testnum;
 __host__ __device__ inline float getx(float *x,int i,int j,int featurelen=featurelen1)
 {
 	return x[i*featurelen + j];
@@ -20,20 +17,25 @@ void initmat(float *m,int l,float value)
     for(int i=0; i<l; i++)
         m[i] = value;
 }
+void initmat2(int *m,int l,float value)
+{
+    for(int i=0; i<l; i++)
+        m[i] = value;
+}
 void initmat3(vector<int> &testy,int l,int value)
 {
     for(int i=0; i<l; i++)
         testy[i] = value;
 }
 
-float weaklearnerclassfy(vector< vector<float> > &trainx,vector<int>&trainy,vector<int> &testy,
+float weaklearnerclassfy(float *trainx,int *trainy,int *testy,
 							float thita,int bias,int samplenum,float *weight,int f,int *clas)
 {
 	float cnt=0;
-	initmat3(testy,samplenum,clas[1]);
+	initmat2(testy,samplenum,clas[1]);
 	for(int i=0;i<samplenum;i++)
 	{
-		if (bias*trainx[i][f]>bias*thita)
+		if (bias*getx(trainx,i,f)  > bias*thita) // trainx[i][f]
 		{
 			testy[i]=clas[0];
 		}
@@ -161,7 +163,7 @@ __global__ void redct_acury(float *d_clsy,float *d_interresult,int *location,int
 }
 
 
-void renewweight(float *weight,int samplenum,float alpha,vector<int> &trainy,vector<int> &testy)
+void renewweight(float *weight,int samplenum,float alpha,int *trainy,int *testy)
 {
     float factor=0;
     for(int i=0; i<samplenum; i++)
@@ -174,12 +176,12 @@ void renewweight(float *weight,int samplenum,float alpha,vector<int> &trainy,vec
     }
 }
 
-void adaboostclassfy(vector< vector<float> > &trainx,vector<int> &testy,
+void adaboostclassfy(float *trainx,int *testy,
 						float *alpha,float *thresh,vector< vector<int> >&bia_fea,int samplenum,int t,int *clas)
 {
     float thita,temph=0;
     int p,fcol;
-	initmat3(testy,samplenum,clas[1]);
+	initmat2(testy,samplenum,clas[1]);
     for(int i=0; i<samplenum; i++)
     {
 		temph=0;
@@ -188,7 +190,7 @@ void adaboostclassfy(vector< vector<float> > &trainx,vector<int> &testy,
             thita = thresh[j];
             p = bia_fea[j][0];
             fcol = bia_fea[j][1];
-            if((p*trainx[i][fcol]) > (p*thita))
+            if(p*getx(trainx,i,fcol) > (p*thita))
             {
 				temph +=  alpha[j];
             }
@@ -203,7 +205,7 @@ void adaboostclassfy(vector< vector<float> > &trainx,vector<int> &testy,
 }
 
 
-float calerrorrate(vector<int> &trainy,vector<int> &testy,int samplenum)
+float calerrorrate(int *trainy,int *testy,int samplenum)
 {
 	int cnt=0;
 	for(int i=0;i<samplenum;i++)
@@ -227,18 +229,18 @@ void get_trsh_bia_fea(int *d_location,float *d_tempthresh,int *d_tempbias,int *d
 }
 
 
-float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,float *thresh,
+float adatrain(float *h_x,int *h_y,float *alpha,float *thresh,
 				vector< vector<int> >&bia_fea,int clsifynum,int featurelen,int *clas,int samplenum)
 {
 	
 	float weight[samplenum],errorrate,fnlerror;
     int t=0;
-    vector<int> testy(samplenum);
-    initmat3(testy,samplenum,clas[1]);
+    int  *testy = (int *)malloc(samplenum*sizeof(int));
+    initmat2(testy,samplenum,clas[1]);
 	initmat(weight,samplenum,1/float(samplenum));//需要改为对device端的weight 初始化；
 	//cuda 设备端参数设置
-	float *d_x,*h_x,*d_clsy,*d_weight,*d_tempthresh,*d_interresult,*d_result;
-	int *d_y,*h_y,*d_tempbias,*d_clas,*d_whchfea,*d_location,*location,*real_location;
+	float *d_x,*d_clsy,*d_weight,*d_tempthresh,*d_interresult,*d_result;
+	int *d_y,*d_tempbias,*d_clas,*d_whchfea,*d_location,*location,*real_location;
 	size_t sizex,sizey,sizec;
 	int numBlocksx = 32;
     int numBlocksy = 16;
@@ -261,8 +263,11 @@ float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,
 	cudaMalloc((void **)&real_location , 256*sizeof(int));//大小随dimGrid2调整
 	cudaMalloc((void **)&d_location , sizeof(int));
 	cudaMalloc((void **)&d_result , sizeof(float));
+	
+	/*
 	h_x = (float *) malloc(sizex);
 	h_y = (int *)malloc(sizey);
+	
 	for(int i=0;i<samplenum;i++)
 	{
 		for(int j=0;j<featurelen;j++)
@@ -271,6 +276,8 @@ float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,
 		}
 		h_y[i] = trainy[i];	
 	}
+	*/
+
 	cudaMemcpy(d_x,h_x,sizex,cudaMemcpyHostToDevice);
 	cudaMemcpy(d_y,h_y,sizey,cudaMemcpyHostToDevice);
 	cudaMemcpy(d_weight,weight,sizec,cudaMemcpyHostToDevice);
@@ -294,12 +301,12 @@ float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,
 		redct_acury<<<  dimGrid3, dimBlock3 >>>(d_interresult,d_result,real_location,d_location,numblock3,2,d_tempthresh,d_tempbias,d_whchfea);
 		get_trsh_bia_fea(d_location,d_tempthresh,d_tempbias,d_whchfea,thresh,bia_fea,t);
 		
-        errorrate = weaklearnerclassfy(trainx,trainy,testy,thresh[t],bia_fea[t][0],samplenum,weight,bia_fea[t][1],clas);//使用t轮最优分类器进行分类
+        errorrate = weaklearnerclassfy(h_x,h_y,testy,thresh[t],bia_fea[t][0],samplenum,weight,bia_fea[t][1],clas);//使用t轮最优分类器进行分类trainx未修改
 		cout<<"权重错误:"<<errorrate<<endl;
         alpha[t] = 0.5 * log((1-errorrate)/errorrate);
-        renewweight(weight,samplenum,alpha[t],trainy,testy);
-        adaboostclassfy(trainx,testy,alpha,thresh,bia_fea,samplenum,t+1,clas);//changed
-		fnlerror = calerrorrate(trainy,testy,samplenum);
+        renewweight(weight,samplenum,alpha[t],h_y,testy);
+        adaboostclassfy(h_x,testy,alpha,thresh,bia_fea,samplenum,t+1,clas);//changed
+		fnlerror = calerrorrate(h_y,testy,samplenum);
 		cout<<"t:"<<t<<"  train error:"<<fnlerror<<endl;
 		t++;
         if(t >= clsifynum || fnlerror < 0.0001)
@@ -320,8 +327,8 @@ float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,
 	cudaFree(real_location);
 	cudaFree(d_location);
 	cudaFree(d_result);
-	free(h_x);
-	free(h_y);
+	//free(h_x);
+	free(testy);
 	return t;
 }
 
