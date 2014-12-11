@@ -10,13 +10,13 @@
 #include "opencv2/imgproc/imgproc.hpp"
 
 #include "haar.hpp"
+#include "image.hpp"
 
 using namespace cv;
 using namespace std;
 
-#define SAMPLE_COLS 19
-#define SAMPLE_ROWS 19
 #define DIMENSION 
+#define MAKE_SAMPLE
 
 //vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
 int calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
@@ -55,14 +55,15 @@ vector<vector<int> > calcuHaarFeature_image(Mat image, int *raw_feature, int com
     return tile_feature;
 }
 
-vector<Mat> read_image_list(const char * filename)
+vector<Mat> read_image_list(const char * filename, int num)
 {
     char buffer[256];
     fstream list_file;
     list_file.open(filename, ios::in);
     vector<Mat> image_list;
     string pgm(".pgm");
-    while(!list_file.eof())
+    int n=0;
+    while(!list_file.eof() && n<num)
     {
         list_file.getline(buffer, 256, '\n');
         string file(buffer);
@@ -77,32 +78,39 @@ vector<Mat> read_image_list(const char * filename)
             }
             image_list.push_back(t);
         }
+        n++;
     }
     list_file.close();
     return image_list;
 }
 
 //int prepare_sample(vector<vector<float> > &sample, vector<int> &flag)
-int prepare_sample(float **sample, int **flag)
+int prepare_sample(float **sample, int **flag, int pos_num, int nag_num, bool write)
 {
-    vector<Mat> pos_sample = read_image_list("./positive.txt");
-    vector<Mat> nag_sample = read_image_list("./nagetive.txt");
+    vector<Mat> pos_sample = read_image_list("./positive.txt", pos_num);
+    vector<Mat> nag_sample = read_image_list("./nagetive.txt", nag_num);
 
     //vector<int> pos_flag(pos_sample.size(), 1);
     //vector<int> nag_flag(nag_sample.size(), 0);
     //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
     //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
     
-    int num = pos_sample.size()+nag_sample.size();
-    
+    if(pos_sample.size() != pos_num || nag_sample.size() != nag_num)
+    {
+        cout<<"invalid sample num"<<endl;
+        exit(1);
+    }
+
+
+    int num = pos_num+nag_num;
     int *f = (int*)malloc(num*sizeof(int));
     int *i=f;
-    for(size_t n=0; n<pos_sample.size(); ++n)
+    for(int n=0; n<pos_num; ++n)
     {
         *i=1;
         i++;
     }
-    for(size_t n=0; n<nag_sample.size(); ++n)
+    for(int n=0; n<nag_num; ++n)
     {
         *i=0;
         i++;
@@ -118,6 +126,7 @@ int prepare_sample(float **sample, int **flag)
 
     cout<<"pos feature"<<endl;
     int t=0;
+    char filename[50];
     for(vector<Mat>::iterator i=pos_sample.begin(); i!=pos_sample.end(); ++i)
     {
         //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
@@ -125,6 +134,13 @@ int prepare_sample(float **sample, int **flag)
         //sample.push_back(features);
         memcpy(s, raw_feature, compactSize*sizeof(float));
         s+=compactSize;
+        if(write)
+        {
+            sprintf(filename, "./bin/pos_feature_bin_%04d", t);
+            FILE *fp = fopen(filename, "wb");
+            fwrite(raw_feature, sizeof(float), compactSize, fp);
+            fclose(fp);
+        }
         t++;
         if(t%10==0)
             cout<<"\rpos "<<t<<flush;
@@ -140,38 +156,52 @@ int prepare_sample(float **sample, int **flag)
         //sample.push_back(features);
         memcpy(s, raw_feature, compactSize*sizeof(float));
         s+=compactSize;
+        if(write)
+        {
+            sprintf(filename, "./bin/nag_feature_bin_%04d", t);
+            FILE *fp = fopen(filename, "wb");
+            fwrite(raw_feature, sizeof(float), compactSize, fp);
+            fclose(fp);
+        }
         t++;
         if(t%10==0)
             cout<<"\rpos "<<t<<flush;
     }
     cout<<" "<<nag_sample.size()<<endl;
-    
+
     post_calculate();
     cout<<"feature complete"<<endl;
 
     return num;
 }
 
-int prepare_test(float **sample, int **flag)
+int prepare_test(float **sample, int **flag, int pos_num, int nag_num, bool write)
 {
-    vector<Mat> pos_sample = read_image_list("./test_positive.txt");
-    vector<Mat> nag_sample = read_image_list("./test_nagetive.txt");
+    vector<Mat> pos_sample = read_image_list("./test_positive.txt", pos_num);
+    vector<Mat> nag_sample = read_image_list("./test_nagetive.txt", nag_num);
 
     //vector<int> pos_flag(pos_sample.size(), 1);
     //vector<int> nag_flag(nag_sample.size(), 0);
     //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
     //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
     
-    int num = pos_sample.size()+nag_sample.size();
-    
+    if(pos_sample.size() != pos_num || nag_sample.size() != nag_num)
+    {
+        cout<<pos_sample.size()<<" "<<nag_sample.size();
+        cout<<"invalid sample num"<<endl;
+        exit(1);
+    }
+
+
+    int num = pos_num+nag_num;
     int *f = (int*)malloc(num*sizeof(int));
     int *i=f;
-    for(size_t n=0; n<pos_sample.size(); ++n)
+    for(int n=0; n<pos_num; ++n)
     {
         *i=1;
         i++;
     }
-    for(size_t n=0; n<nag_sample.size(); ++n)
+    for(int n=0; n<nag_num; ++n)
     {
         *i=0;
         i++;
@@ -187,6 +217,7 @@ int prepare_test(float **sample, int **flag)
 
     cout<<"pos feature"<<endl;
     int t=0;
+    char filename[50];
     for(vector<Mat>::iterator i=pos_sample.begin(); i!=pos_sample.end(); ++i)
     {
         //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
@@ -194,6 +225,13 @@ int prepare_test(float **sample, int **flag)
         //sample.push_back(features);
         memcpy(s, raw_feature, compactSize*sizeof(float));
         s+=compactSize;
+        if(write)
+        {
+            sprintf(filename, "./bin/test_pos_feature_bin_%04d", t);
+            FILE *fp = fopen(filename, "wb");
+            fwrite(raw_feature, sizeof(float), compactSize, fp);
+            fclose(fp);
+        }
         t++;
         if(t%10==0)
             cout<<"\rpos "<<t<<flush;
@@ -209,28 +247,39 @@ int prepare_test(float **sample, int **flag)
         //sample.push_back(features);
         memcpy(s, raw_feature, compactSize*sizeof(float));
         s+=compactSize;
+        if(write)
+        {
+            sprintf(filename, "./bin/test_nag_feature_bin_%04d", t);
+            FILE *fp = fopen(filename, "wb");
+            fwrite(raw_feature, sizeof(float), compactSize, fp);
+            fclose(fp);
+        }
         t++;
         if(t%10==0)
             cout<<"\rpos "<<t<<flush;
     }
     cout<<" "<<nag_sample.size()<<endl;
-    
+
     post_calculate();
     cout<<"feature complete"<<endl;
 
     return num;
 }
-/*
+
+#ifdef MAKE_SAMPLE
 int main()
 {
-    vector<vector<float> > tx;
-    vector<int> ty;
-    prepare_sample(tx, ty);
-    cout<<tx.size()<<endl;
-    cout<<tx[0].size()<<endl;
+    float *tx;
+    int *ty;
+    //prepare_sample(&tx, &ty, 1000, 2000, true);
+
+    float *testx;
+    int *testy;
+    prepare_test(&testx, &testy, 400, 1000, true);
 
     return 0;
 }
+#endif
 
 /*
 int main_deprecated(int argc, char *argv[])

@@ -224,9 +224,8 @@ __global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, float *pfe
 
         int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         //int offset = (((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
-        //if(sx==1 && sy==2 )
-            //*(pfeature+i*blockDim.x+j) = offset
         *(pfeature+offset) = f1-f2;
+        //*(pfeature+offset) = offset;
     }
 }
 
@@ -247,6 +246,8 @@ __global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, float *pfeat
 
         int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-f2;
+        //*(pfeature+offset) = f1;
+        //*(pfeature+offset) = *(ptr+width*i+j);
     }
 }
 
@@ -267,6 +268,8 @@ __global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, float *pf
 
         int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1 -2*f2;
+        //*(pfeature+offset) = f1;
+        //*(pfeature+offset) = *(ptr+width*i+j);
     }
 }
 
@@ -287,6 +290,8 @@ __global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, float *pfea
 
         int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-2*f2;
+        //*(pfeature+offset) = f1;
+        //*(pfeature+offset) = *(ptr+width*i+j);
     }
 }
 
@@ -310,6 +315,8 @@ __global__ void haar_rect3(u32 *ptr, int *d_offset_matrix, float *pfeature, int 
 
         int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-2*f2-2*f3;
+        //*(pfeature+offset) = f1;
+        //*(pfeature+offset) = *(ptr+width*i+j);
     }
 }
 

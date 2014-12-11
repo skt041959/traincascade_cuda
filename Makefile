@@ -19,9 +19,5 @@ adaboost.o:adaboost.cu adaboost.hpp
 main.o:main.cpp
 	g++ -g -c main.cpp -o main.o
 
-
-#haar:image.o haar.o
-	#nvcc -G -g -m64 -gencode arch=compute_11,code=sm_11 haar.o image.o -o haar `pkg-config --libs opencv`
-	
 adaboost:adaboost.o haar.o image.o main.o
 	nvcc -G -g -m64 -gencode arch=compute_11,code=sm_11 haar.o image.o adaboost.o main.o -o adaboost `pkg-config --libs opencv`

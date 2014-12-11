@@ -1,10 +1,40 @@
-#include<iostream>
+#include <iostream>
 #include <stdlib.h>
-#include<vector>
+#include <cstdio>
+#include <vector>
+
 #include "adaboost.hpp"
 #include "image.hpp"
 using namespace std;
 
+#define MAKE_SAMPLE
+
+
+int read_sample(float *sample, int num, bool pos, bool test)
+{
+    char filename[50];
+    for(int i=0; i<num; ++i)
+    {
+        if(!test)
+            if(pos)
+                sprintf(filename, "pos_feature_bin_%04d", i);
+            else
+                sprintf(filename, "nag_feature_bin_%04d", i);
+        else
+            if(pos)
+                sprintf(filename, "test_pos_feature_bin_%04d", i);
+            else
+                sprintf(filename, "test_nag_feature_bin_%04d", i);
+
+        FILE *fp = fopen(filename, "rb");
+        fread((void*)sample, sizeof(float), num, fp);
+        sample += featurelen1;
+        fclose(fp);
+    }
+    return 0;
+}
+
+#ifndef MAKE_SAMPLE
 int main()
 {	
 	
@@ -17,12 +47,27 @@ int main()
     float *tx;
     int *ty;
 
-    samplenum = prepare_sample(&tx, &ty);
+    int pos = 500;
+    int nag = 1000;
+    samplenum = pos+nag;
+    tx = (float*)malloc((pos+nag)*featurelen1*sizeof(float));
+    cout<<"read pos"<<endl;
+    read_sample(tx, pos, true, false);
+    cout<<"read nag"<<endl;
+    read_sample(tx+pos*featurelen1, nag, false, false);
+    ty = (int*)malloc((pos+nag)*sizeof(int));
+    for(int n=0; n<pos; n++)
+        *(ty+n) = 1;
+
+    for(int n=0; n<nag; n++)
+        *(ty+n+pos) = 0;
+
+    //samplenum = prepare_sample(&tx, &ty);
     //cout<<tx.size()<<endl;
     //cout<<tx[0].size()<<endl;
     //samplenum = tx.size();
     //featurelen = tx[0].size();
-    int featurelen = 63960;
+    int featurelen = featurelen1;
 
 	int clas[2]= {0,1};//两种类别0和1；
 	float alpha[clsifynum];//the weight of classifiers
@@ -38,9 +83,23 @@ int main()
 
     float *testx;
     int *testy;
+    int pos_test = 100;
+    int nag_test = 100;
 
-    testnum = prepare_test(&testx, &testy);
+    testx = (float*)malloc((pos_test+nag_test)*featurelen1*sizeof(float));
+    cout<<"read test pos";
+    read_sample(testx, pos, true, true);
+    cout<<"read test nag";
+    read_sample(testx+pos*featurelen1, nag, false, true);
+    testy = (int*)malloc((pos_test+nag_test)*sizeof(int));
 
+    for(int n=0; n<pos_test; n++)
+        *(testy+n) = 1;
+
+    for(int n=0; n<nag_test; n++)
+        *(testy+n+pos_test) = 0;
+
+    testnum = pos_test+nag_test;
     int *clasy = (int *)malloc(testnum*sizeof(int));
     adaboostclassfy(testx,clasy,alpha,thresh,bia_fea,testnum,t,clas);
     testerror = calerrorrate(testy,clasy,testnum);
@@ -48,5 +107,6 @@ int main()
 
     return 0;
 }
+#endif
 
 
