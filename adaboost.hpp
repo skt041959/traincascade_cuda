@@ -2,7 +2,7 @@
 #include<vector>
 #include<iostream>
 using namespace std;
-#define featurelen1 63960 //特征维度
+#define featurelen1 43488 //特征维度
 #define clsifynum1 200//分类器数目
 
 /*float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,float *thresh,

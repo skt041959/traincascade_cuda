@@ -44,14 +44,14 @@ __host__ int prepare(float **p_raw_features, int *p_compactSize, int width, int 
         //    offset_matrix_size_max = offset_matrix_size[type];
 
         p_offset_matrix[type] = (int*)malloc(offset_matrix_size[type]*sizeof(int));
-        cudaMalloc((void **)d_offset_matrix, offset_matrix_size[type]*sizeof(int));
+        cudaMalloc((void **)(d_offset_matrix+type), offset_matrix_size[type]*sizeof(int));
 
         cout<<"malloc matrix "<<type<<endl;
 
         int *p_offset = p_offset_matrix[type];
         int index = 0;
-        for(int sy=1; sy<=sy_max; ++sy)
-            for(int sx=1; sx<=sx_max; ++sx)
+        for(int sy=BASE_SCALE; sy<=sy_max; ++sy)
+            for(int sx=BASE_SCALE; sx<=sx_max; ++sx)
             {
                 //int blockDim_x = width-temp_x[type]*sx+1;
                 //int blockDim_y = height-temp_y[type]*sy+1;
@@ -60,7 +60,7 @@ __host__ int prepare(float **p_raw_features, int *p_compactSize, int width, int 
                     {
                         if((i+temp_y[type]*sy) <= height && (j+temp_x[type]*sx) <= width)
                         {
-                            *(p_offset+((sy-1)*sx_max+(sx-1))*width*height+width*i+j) = index;
+                            *(p_offset+((sy-BASE_SCALE)*(sx_max-1)+(sx-BASE_SCALE))*width*height+width*i+j) = index;
                             //if(type==0)
                             //{
                             //    cout<<i<<","<<j<<" "<<sx<<","<<sy<<" ";
@@ -124,10 +124,8 @@ __host__ int calcuHaarFeature3(u32 *ptr, int width, int height)
         int sx_max = width/temp_x[type];
         int sy_max = height/temp_y[type];
 
-        dim3 dimGrid(sx_max, sy_max);
+        dim3 dimGrid(sx_max-1, sy_max-1);
         dim3 dimBlock(width, height);
-
-
         switch(type)
         {
             case 0:
@@ -171,7 +169,12 @@ __host__ int post_calculate()
 {
     cudaFree(d_ptr);
     cudaFree(d_pfeature);
-    cudaFree(d_offset_matrix);
+
+    cudaFree(d_offset_matrix[0]);
+    cudaFree(d_offset_matrix[1]);
+    cudaFree(d_offset_matrix[2]);
+    cudaFree(d_offset_matrix[3]);
+    cudaFree(d_offset_matrix[4]);
 
     free(p_features_start);
     free(p_offset_matrix[0]);

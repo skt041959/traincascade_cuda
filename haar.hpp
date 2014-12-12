@@ -24,6 +24,8 @@ typedef enum{
     RECT = 4
 }TemplateType;
 
+#define BASE_SCALE 2
+
 void checkCUDAError(const char *msg);
 
 //int integral_cuda(u8 *ptr, u8 *ptr_inte, int width, int height);

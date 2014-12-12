@@ -211,8 +211,8 @@ __global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, float *pfe
 {
     int i = threadIdx.y; //0
     int j = threadIdx.x; //13
-    int sy = blockIdx.y+1; //2
-    int sx = blockIdx.x+1; //3
+    int sy = blockIdx.y+BASE_SCALE; //2
+    int sx = blockIdx.x+BASE_SCALE; //3
 
     if((i+sy) <= (height-1) && (j+2*sx) <= (width-1))
     {
@@ -222,7 +222,7 @@ __global__ void haar_edge_horizontal3(u32 *ptr, int *d_offset_matrix, float *pfe
         int f2 = *(ptr+width*(i+sy)+(j+2*sx)) + *(ptr+width*i+(j+sx))
             - *(ptr+width*(i+sy)+(j+sx)) - *(ptr+width*i+(j+2*sx));
 
-        int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
+        int offset = *(d_offset_matrix+(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+blockDim.x*i+j);
         //int offset = (((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-f2;
         //*(pfeature+offset) = offset;
@@ -233,8 +233,8 @@ __global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, float *pfeat
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
-    int sx = blockIdx.x+1;
-    int sy = blockIdx.y+1;
+    int sx = blockIdx.x+BASE_SCALE;
+    int sy = blockIdx.y+BASE_SCALE;
 
     if((i+2*sy) < (height-1) && (j+sx) < (width-1))
     {
@@ -244,7 +244,7 @@ __global__ void haar_edge_vertical3(u32 *ptr, int *d_offset_matrix, float *pfeat
         int f2 = *(ptr+width*(i+2*sy)+(j+sx)) + *(ptr+width*(i+sy)+j)
             - *(ptr+width*(i+2*sy)+j) - *(ptr+width*(i+sy)+(j+sx));
 
-        int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
+        int offset = *(d_offset_matrix+(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-f2;
         //*(pfeature+offset) = f1;
         //*(pfeature+offset) = *(ptr+width*i+j);
@@ -255,8 +255,8 @@ __global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, float *pf
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
-    int sx = blockIdx.x+1;
-    int sy = blockIdx.y+1;
+    int sx = blockIdx.x+BASE_SCALE;
+    int sy = blockIdx.y+BASE_SCALE;
 
     if((i+sy)<(height-1) && (j+3*sx)<(width-1))
     {
@@ -266,7 +266,7 @@ __global__ void haar_liner_horizontal3(u32 *ptr, int *d_offset_matrix, float *pf
         int f2 = *(ptr+width*(i+sy)+(j+2*sx)) + *(ptr+width*i+(j+sx))
             - *(ptr+width*(i+sy)+(j+sx)) - *(ptr+width*i+(j+2*sx));
 
-        int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
+        int offset = *(d_offset_matrix+(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1 -2*f2;
         //*(pfeature+offset) = f1;
         //*(pfeature+offset) = *(ptr+width*i+j);
@@ -277,8 +277,8 @@ __global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, float *pfea
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
-    int sx = blockIdx.x+1;
-    int sy = blockIdx.y+1;
+    int sx = blockIdx.x+BASE_SCALE;
+    int sy = blockIdx.y+BASE_SCALE;
 
     if((i+3*sy)<(height-1) && (j+sx)<(width-1))
     {
@@ -288,7 +288,7 @@ __global__ void haar_liner_vertical3(u32 *ptr, int *d_offset_matrix, float *pfea
         int f2 = *(ptr+width*(i+2*sy)+(j+sx)) + *(ptr+width*(i+sy)+j)
             - *(ptr+width*(i+2*sy)+j) - *(ptr+width*(i+sy)+(j+sx));
 
-        int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
+        int offset = *(d_offset_matrix+(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-2*f2;
         //*(pfeature+offset) = f1;
         //*(pfeature+offset) = *(ptr+width*i+j);
@@ -299,8 +299,8 @@ __global__ void haar_rect3(u32 *ptr, int *d_offset_matrix, float *pfeature, int 
 {
     int i = threadIdx.y;
     int j = threadIdx.x;
-    int sx = blockIdx.x+1;
-    int sy = blockIdx.y+1;
+    int sx = blockIdx.x+BASE_SCALE;
+    int sy = blockIdx.y+BASE_SCALE;
 
     if((i+2*sy)<(height-1) && (j+2*sx)<(width-1))
     {
@@ -313,7 +313,7 @@ __global__ void haar_rect3(u32 *ptr, int *d_offset_matrix, float *pfeature, int 
         int f3 = *(ptr+width*(i+2*sy)+(j+sx)) + *(ptr+width*(i+sy)+j)
             - *(ptr+width*(i+2*sy)+j) - *(ptr+width*(i+sy)+(j+sx));
 
-        int offset = *(d_offset_matrix+((sy-1)*gridDim.x+(sx-1))*blockDim.x*blockDim.y+blockDim.x*i+j);
+        int offset = *(d_offset_matrix+(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+blockDim.x*i+j);
         *(pfeature+offset) = f1-2*f2-2*f3;
         //*(pfeature+offset) = f1;
         //*(pfeature+offset) = *(ptr+width*i+j);

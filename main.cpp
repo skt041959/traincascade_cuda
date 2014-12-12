@@ -9,7 +9,6 @@ using namespace std;
 
 #define MAKE_SAMPLE
 
-
 int read_sample(float *sample, int num, bool pos, bool test)
 {
     char filename[50];
@@ -27,7 +26,7 @@ int read_sample(float *sample, int num, bool pos, bool test)
                 sprintf(filename, "test_nag_feature_bin_%04d", i);
 
         FILE *fp = fopen(filename, "rb");
-        fread((void*)sample, sizeof(float), num, fp);
+        fread((void*)sample, sizeof(float), featurelen1, fp);
         sample += featurelen1;
         fclose(fp);
     }

@@ -15,7 +15,7 @@
 using namespace cv;
 using namespace std;
 
-#define DIMENSION 
+#define DIMENSION
 #define MAKE_SAMPLE
 
 //vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
@@ -94,7 +94,7 @@ int prepare_sample(float **sample, int **flag, int pos_num, int nag_num, bool wr
     //vector<int> nag_flag(nag_sample.size(), 0);
     //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
     //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
-    
+
     if(pos_sample.size() != pos_num || nag_sample.size() != nag_num)
     {
         cout<<"invalid sample num"<<endl;
@@ -125,7 +125,7 @@ int prepare_sample(float **sample, int **flag, int pos_num, int nag_num, bool wr
     *sample = s;
 
     cout<<"pos feature"<<endl;
-    int t=0;
+    int t=2000;
     char filename[50];
     for(vector<Mat>::iterator i=pos_sample.begin(); i!=pos_sample.end(); ++i)
     {
@@ -148,7 +148,7 @@ int prepare_sample(float **sample, int **flag, int pos_num, int nag_num, bool wr
     cout<<" "<<pos_sample.size()<<endl;
 
     cout<<"nag feature"<<endl;
-    t=0;
+    t=4000;
     for(vector<Mat>::iterator i=nag_sample.begin(); i!=nag_sample.end(); ++i)
     {
         //vector<float> features = calcuHaarFeature_sample(*i, raw_feature, compactSize);
@@ -165,7 +165,7 @@ int prepare_sample(float **sample, int **flag, int pos_num, int nag_num, bool wr
         }
         t++;
         if(t%10==0)
-            cout<<"\rpos "<<t<<flush;
+            cout<<"\rnag "<<t<<flush;
     }
     cout<<" "<<nag_sample.size()<<endl;
 
@@ -184,7 +184,7 @@ int prepare_test(float **sample, int **flag, int pos_num, int nag_num, bool writ
     //vector<int> nag_flag(nag_sample.size(), 0);
     //flag.insert(flag.end(), pos_flag.begin(), pos_flag.end());
     //flag.insert(flag.end(), nag_flag.begin(), nag_flag.end());
-    
+
     if(pos_sample.size() != pos_num || nag_sample.size() != nag_num)
     {
         cout<<pos_sample.size()<<" "<<nag_sample.size();
@@ -271,11 +271,11 @@ int main()
 {
     float *tx;
     int *ty;
-    //prepare_sample(&tx, &ty, 1000, 2000, true);
+    prepare_sample(&tx, &ty, 429, 548, true);
 
     float *testx;
     int *testy;
-    prepare_test(&testx, &testy, 400, 1000, true);
+    prepare_test(&testx, &testy, 200, 200, true);
 
     return 0;
 }
@@ -312,7 +312,7 @@ int main_deprecated(int argc, char *argv[])
                                                         //raw_feature 特征的存储空间的指针
                                                         //compactSize 特征的长度
                                                         //width, height 样本宽、高
-                                                        
+
     cout<<"prepare complete"<<endl;
 
     vector<int> features = calcuHaarFeature_sample(sample, raw_feature, compactSize);
