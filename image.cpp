@@ -271,11 +271,11 @@ int main()
 {
     float *tx;
     int *ty;
-    prepare_sample(&tx, &ty, 429, 548, true);
+    //prepare_sample(&tx, &ty, 429, 548, true);
 
     float *testx;
     int *testy;
-    prepare_test(&testx, &testy, 200, 200, true);
+    prepare_test(&testx, &testy, 472, 1, true);
 
     return 0;
 }

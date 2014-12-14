@@ -3,13 +3,13 @@
 #include<iostream>
 using namespace std;
 #define featurelen1 43488 //特征维度
-#define clsifynum1 200//分类器数目
+#define clsifynum1 600//分类器数目
 
 /*float adatrain(vector< vector<float> > &trainx,vector<int> &trainy,float *alpha,float *thresh,
 				vector< vector<int> >&bia_fea,int clsifynum,int featurelen,int *clas,int samplenum);
 */
 
-float adatrain(float *h_x,int *h_y,float *alpha,float *thresh,
+int adatrain(float *h_x,int *h_y,float *alpha,float *thresh,
 				vector< vector<int> >&bia_fea,int clsifynum,int featurelen,int *clas,int samplenum);				
 				
 /*void adaboostclassfy(vector< vector<float> > &trainx,vector<int> &testy,float *alpha,

@@ -229,7 +229,7 @@ void get_trsh_bia_fea(int *d_location,float *d_tempthresh,int *d_tempbias,int *d
 }
 
 
-float adatrain(float *h_x,int *h_y,float *alpha,float *thresh,
+int adatrain(float *h_x,int *h_y,float *alpha,float *thresh,
 				vector< vector<int> >&bia_fea,int clsifynum,int featurelen,int *clas,int samplenum)
 {
 	
