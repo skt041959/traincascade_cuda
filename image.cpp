@@ -16,7 +16,7 @@ using namespace cv;
 using namespace std;
 
 #define DIMENSION
-#define MAKE_SAMPLE
+//#define MAKE_SAMPLE
 
 //vector<float> calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
 int calcuHaarFeature_sample(Mat sample, float *raw_feature, int compactSize) //提取单个样本特征的函数
@@ -266,6 +266,98 @@ int prepare_test(float **sample, int **flag, int pos_num, int nag_num, bool writ
     return num;
 }
 
+int prepare_image(char * filename, float **feature, vector<Tile> &place)
+{
+    Mat image = imread(filename, 0);
+    //int i = image.rows/19 /1.25
+    vector<Mat> tiles;
+    int col = image.cols;
+    int row = image.rows;
+    float s=1;
+
+    while(col>=SAMPLE_COLS && row>=SAMPLE_ROWS)
+    {
+        for(int i=0; i<row-SAMPLE_ROWS; i+=5)
+            for(int j=0; j<col-SAMPLE_COLS; j+=5)
+            {
+                Mat t = image(Rect(i, j, SAMPLE_COLS, SAMPLE_ROWS));
+                place.push_back(Tile(j, i, SAMPLE_COLS/s, SAMPLE_COLS/s));
+                Mat c = t.clone();
+                tiles.push_back(c);
+            }
+
+        s *= 0.8;
+        col = col*s;
+        row = row*s;
+
+        image.resize(row);
+    }
+
+    float *raw_feature;
+    int compactSize;
+    prepare(&raw_feature, &compactSize, SAMPLE_COLS, SAMPLE_ROWS);
+
+    float *f = (float*)malloc(tiles.size()*compactSize*sizeof(float));
+    *feature = f;
+    for(vector<Mat>::iterator i=tiles.begin(); i!=tiles.end(); ++i)
+    {
+        calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        f+=compactSize;
+    }
+
+    return tiles.size();
+}
+
+int show_image(char *filename, vector<Tile> &faces)
+{
+    Mat image = imread(filename, 0);
+    Mat prob = Mat::zeros(image.size(), CV_32SC1);
+    Mat single = Mat::zeros(image.size(), CV_32SC1);
+    Mat binary;
+
+    for(size_t i=0; i<faces.size(); i++)
+    {
+        single.setTo(0);
+        rectangle(prob, Point(faces[i].x, faces[i].y), Point(faces[i].x2, faces[i].y2),\
+            Scalar(1), CV_FILLED);
+
+        prob += single;
+    }
+    //normalize(prob, prob, 0, 255, NORM_MINMAX);
+    double max;
+    minMaxIdx(prob, NULL, &max);
+    threshold(prob, binary, max/2, 255, CV_THRESH_BINARY);
+
+    vector< vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    vector<Rect> rects;
+    cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    if( !contours.empty() && !hierarchy.empty() )
+    {
+        vector< vector<Point> >::iterator i = contours.begin();
+        for( ; i!=contours.end(); i++)
+        {
+            Rect s = cv::boundingRect(*i);
+            rects.push_back(s);
+        }
+    }
+
+    for(size_t i=0; i<rects.size(); i++)
+    {
+        rectangle(image, rects[i], Scalar(255), 2);
+    }
+
+    namedWindow("image", 0);
+    imshow("image", image);
+    //waitKey(0);
+    while(1)
+    {
+        char ch = waitKey(0);
+        if((ch & 0xFF) == 27)
+            break;
+    }
+}
+
 #ifdef MAKE_SAMPLE
 int main()
 {
@@ -281,72 +373,3 @@ int main()
 }
 #endif
 
-/*
-int main_deprecated(int argc, char *argv[])
-{
-    //==========================prepare sample image========================
-    //Mat sample = imread("sample.bmp");
-    Mat sample = cv::Mat::zeros(20, 20, CV_8UC1);
-    for(int i=0; i<20; ++i)
-    {
-        sample.col(i).setTo(2*i);
-    }
-    //for(int i=0; i<sample.rows; ++i)
-    //{
-    //    for(int j=0; j<sample.cols; ++j)
-    //    {
-    //        cout<<(int)*(ptr_sample+i*sample.cols+j)<<"\t";
-    //    }
-    //    cout<<endl;
-    //}
-    //cout<<endl;
-    //
-    cout<<sample.rows<<" "<<sample.cols<<endl;
-    int width = sample.cols;
-    int height = sample.rows;
-    u8 * ptr_sample = (u8 *)sample.data;
-
-    int *raw_feature;
-    int compactSize;
-    prepare(&raw_feature, &compactSize, width, height); //分配内存，返回的是特征的存贮空间指针，以及特征的长度
-                                                        //raw_feature 特征的存储空间的指针
-                                                        //compactSize 特征的长度
-                                                        //width, height 样本宽、高
-
-    cout<<"prepare complete"<<endl;
-
-    vector<int> features = calcuHaarFeature_sample(sample, raw_feature, compactSize);
-    //vector<int> features2 = calcuHaarFeature_sample(sample2, raw_feature, compactSize); //第二个样本同理
-
-    //vector<vector<int> > all_sample_feature //将上面计算的features 全部存到这个容器中以便权哥的训练函数进行处理
-    post_calculate(); //free memory
-
-    return 0;
-}
-
-//如果是要计算带检测图像的特征如下调用
-int main2(int argc, char *argv[])
-{
-    Mat image_grayscale = imread("image.jpg"); //待检测图像处理成灰度图
-
-    int *raw_feature;
-    int compactSize;
-    int sample_cols = 21; // 我给出来的所有的样本都是这个尺寸，这也是检测器的尺寸
-    int sample_rows = 28;
-    prepare(&raw_feature, &compactSize, sample_cols, sample_rows); //分配内存，返回的是特征的存贮空间指针，以及特征的长度
-                                                        //raw_feature 特征的存储空间的指针
-                                                        //compactSize 特征的长度
-                                                        //width, height 样本宽、高
-
-    int offset_x = 6;
-    int offset_y = 8; //检测器每次位移的像素个数
-
-    vector<vector<int> > all_tile_features = calcuHaarFeature_image(image_grayscale, raw_feature, compactSize, sample_cols, sample_rows, offset_x, offset_y);
-    //返回的是检测遍历图像得到的所有特征，把这些特征一次通过权哥代码训练出的检测器
-    //需要将不同缩放大小的图像依次传给该函数，因为检测器只能检测特定大小的人脸
-
-    post_calculate(); //free memory
-
-    return 0;
-}
-*/

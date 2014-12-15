@@ -3,7 +3,9 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+
 #include "adaboost.hpp"
+#include "image.hpp"
 
 #include<fstream>
 using namespace std;
@@ -47,9 +49,8 @@ int read_sample(float *sample, int num, bool pos, bool test)
 }
 
 #ifndef MAKE_SAMPLE
-int main()
+int deprecated_main()
 {
-
     //特征维度最不能超过131072，否则需要调整testcu.cu中threadofblock2的参数。
     //int featurelen = featurelen1;//特征维度，在testcu.h设置
     int clsifynum = clsifynum1;//分类器数目，在testcu.h设置
@@ -95,8 +96,38 @@ int main()
     cout<<"the final test error:"<<testerror<<endl;
     return 0;
 }
+#endif
 
+int main(int argc, char *argv[])
+{
+    if(argc < 1)
+        exit(1);
 
+    float *feature;
+    vector<Tile> place;
+    int feature_rows = prepare_image(argv[1], &feature, place);
+
+    int * flags = (int *)malloc(feature_rows*sizeof(int));
+    for(int i=0; i<feature_rows; i++)
+        *(flags+i) = 0;
+    int * clasy = (int *)malloc(feature_rows*sizeof(int));
+    for(int i=0; i<feature_rows; i++)
+        *(clasy+i) = 0;
+
+    int clas[2]= {0,1};
+
+    float testerror = use_train(feature, flags, clasy, feature_rows, clas);
+
+    vector<Tile> faces;
+    for(int i=0; i<feature_rows; i++)
+        if(*(clasy+i))
+            faces.push_back(place[i]);
+
+    show_image(argv[1], faces);
+
+    return 0;
+
+}
 
 int save_train(int pos,int nag,int clsifynum,int *clas)
 {
@@ -169,9 +200,4 @@ float use_train(float *testx,int *testy,int *clasy,int samplenum,int *clas)
     testerror = calerrorrate(testy,clasy,samplenum);
     return testerror;
 }
-
-
-
-#endif
-
 
