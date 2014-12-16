@@ -73,7 +73,7 @@ vector<Mat> read_image_list(const char * filename, int num)
             if(t.cols != SAMPLE_COLS || t.rows != SAMPLE_ROWS)
             {
                 printf("%s\n", buffer);
-                cout<<t.cols<<","<<t.rows<<endl;
+                //cout<<t.cols<<","<<t.rows<<endl;
                 exit(1);
             }
             image_list.push_back(t);
@@ -281,7 +281,7 @@ int prepare_image(char * filename, float **feature, vector<Tile> &place)
         for(int i=0; i<(row-SAMPLE_ROWS); i+=5)
             for(int j=0; j<(col-SAMPLE_COLS); j+=5)
             {
-                cout<<i<<","<<j<<endl;
+                //cout<<i<<","<<j<<endl;
                 Mat t(image, Rect(j, i, SAMPLE_COLS, SAMPLE_ROWS));
                 place.push_back(Tile(j, i, SAMPLE_COLS/s, SAMPLE_COLS/s));
                 Mat c = t.clone();
