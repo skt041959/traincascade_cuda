@@ -273,14 +273,16 @@ int prepare_image(char * filename, float **feature, vector<Tile> &place)
     vector<Mat> tiles;
     int col = image.cols;
     int row = image.rows;
+    cout<<"image"<<col<<"x"<<row<<endl;
     float s=1;
 
     while(col>=SAMPLE_COLS && row>=SAMPLE_ROWS)
     {
-        for(int i=0; i<row-SAMPLE_ROWS; i+=5)
-            for(int j=0; j<col-SAMPLE_COLS; j+=5)
+        for(int i=0; i<(row-SAMPLE_ROWS); i+=5)
+            for(int j=0; j<(col-SAMPLE_COLS); j+=5)
             {
-                Mat t = image(Rect(i, j, SAMPLE_COLS, SAMPLE_ROWS));
+                cout<<i<<","<<j<<endl;
+                Mat t(image, Rect(j, i, SAMPLE_COLS, SAMPLE_ROWS));
                 place.push_back(Tile(j, i, SAMPLE_COLS/s, SAMPLE_COLS/s));
                 Mat c = t.clone();
                 tiles.push_back(c);
@@ -291,7 +293,9 @@ int prepare_image(char * filename, float **feature, vector<Tile> &place)
         row = row*s;
 
         image.resize(row);
+        cout<<"image"<<col<<"x"<<row<<endl;
     }
+    cout<<"tile size"<<tiles.size()<<endl;
 
     float *raw_feature;
     int compactSize;
@@ -299,10 +303,15 @@ int prepare_image(char * filename, float **feature, vector<Tile> &place)
 
     float *f = (float*)malloc(tiles.size()*compactSize*sizeof(float));
     *feature = f;
+    int n=0;
     for(vector<Mat>::iterator i=tiles.begin(); i!=tiles.end(); ++i)
     {
         calcuHaarFeature_sample(*i, raw_feature, compactSize);
+        memcpy(f, raw_feature, compactSize*sizeof(float));
         f+=compactSize;
+        n++;
+        if(n%10==0)
+            cout<<"\rcalcu "<<n<<flush;
     }
 
     return tiles.size();
@@ -311,27 +320,35 @@ int prepare_image(char * filename, float **feature, vector<Tile> &place)
 int show_image(char *filename, vector<Tile> &faces)
 {
     Mat image = imread(filename, 0);
+    Mat image2 = image.clone();
+    Mat image3 = image.clone();
     Mat prob = Mat::zeros(image.size(), CV_32SC1);
     Mat single = Mat::zeros(image.size(), CV_32SC1);
-    Mat binary;
+    Mat binary, binary2;
 
     for(size_t i=0; i<faces.size(); i++)
     {
         single.setTo(0);
         rectangle(prob, Point(faces[i].x, faces[i].y), Point(faces[i].x2, faces[i].y2),\
             Scalar(1), CV_FILLED);
+        rectangle(image2, Point(faces[i].x, faces[i].y), Point(faces[i].x2, faces[i].y2),\
+            Scalar(255), 1);
+        if(faces[i].width == SAMPLE_ROWS && faces[i].height == SAMPLE_COLS)
+            rectangle(image3, Point(faces[i].x, faces[i].y), Point(faces[i].x2, faces[i].y2),\
+                    Scalar(255), 1);
 
         prob += single;
     }
     //normalize(prob, prob, 0, 255, NORM_MINMAX);
-    double max;
-    minMaxIdx(prob, NULL, &max);
-    threshold(prob, binary, max/2, 255, CV_THRESH_BINARY);
+    //double max;
+    //minMaxIdx(prob, NULL, &max);
+    normalize(prob, binary, 0, 255, NORM_MINMAX, CV_8U);
+    threshold(binary, binary2, 120, 255, CV_THRESH_BINARY);
 
     vector< vector<Point> > contours;
     vector<Vec4i> hierarchy;
     vector<Rect> rects;
-    cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(binary2, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     if( !contours.empty() && !hierarchy.empty() )
     {
         vector< vector<Point> >::iterator i = contours.begin();
@@ -344,11 +361,18 @@ int show_image(char *filename, vector<Tile> &faces)
 
     for(size_t i=0; i<rects.size(); i++)
     {
-        rectangle(image, rects[i], Scalar(255), 2);
+        cout<<"face place"<<rects[i].x<<"x"<<rects[i].y<<" "<<rects[i].width<<"x"<<rects[i].height<<endl;
+        rectangle(image, rects[i], Scalar(255), 1);
     }
 
     namedWindow("image", 0);
+    namedWindow("image2", 0);
+    namedWindow("image3", 0);
+    namedWindow("binary", 0);
     imshow("image", image);
+    imshow("image2", image2);
+    imshow("image3", image3);
+    imshow("binary", binary);
     //waitKey(0);
     while(1)
     {
